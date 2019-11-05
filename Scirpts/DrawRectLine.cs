@@ -106,6 +106,32 @@ public class DrawRectInfo : IComparable<DrawRectInfo>
         }
     }
 
+    private int m_isInMask = -1;
+    public int IsInMask
+    {
+        set
+        {
+            m_isInMask = value;
+        }
+        get
+        {
+            return m_isInMask;
+        }
+    }
+
+    private int m_isInMask2D = -1;
+    public int IsInMask2D
+    {
+        set
+        {
+            m_isInMask2D = value;
+        }
+        get
+        {
+            return m_isInMask2D;
+        }
+    }
+
     public DrawRectInfo(string name, bool onlyCanvas) 
     {
         this.m_name = name;
@@ -141,7 +167,7 @@ public class DrawRectInfo : IComparable<DrawRectInfo>
 
     public bool CanBatch(DrawRectInfo b) 
     {
-        return MaterialInstanceID == b.MaterialInstanceID && TextureID == b.TextureID;
+        return MaterialInstanceID == b.MaterialInstanceID && TextureID == b.TextureID && IsInMask == b.IsInMask && IsInMask2D == b.IsInMask2D;
     }
 
     public int CompareTo(DrawRectInfo b)

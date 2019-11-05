@@ -83,6 +83,32 @@ public class UINodeInfo
         }
     }
 
+    private int m_isInMask = -1;
+    public int IsInMask
+    {
+        set 
+        {
+            m_isInMask = value;
+        }
+        get 
+        {
+            return m_isInMask; 
+        }
+    }
+
+    private int m_isInMask2D = -1;
+    public int IsInMask2D
+    {
+        set
+        {
+            m_isInMask2D = value;
+        }
+        get
+        {
+            return m_isInMask2D;
+        }
+    }
+
     private string m_name;
     public string Name
     {
@@ -131,6 +157,57 @@ public class UINodeInfo
             m_BatchID = m_info.BatchID;
             m_depth = m_info.Depth;
             m_hierarychyOrder = m_info.HierarychyOrder;
+        }
+    }
+
+    public Rect GetRect()
+    {
+        float minX, minY, maxX, maxY;
+        minX = maxX = m_corners[0].x;
+        minY = maxY = m_corners[0].y;
+        for (int i = 1; i < 4; ++i)
+        {
+            if (m_corners[i].x < minX)
+            {
+                minX = m_corners[i].x;
+            }
+            if (m_corners[i].x > maxX)
+            {
+                maxX = m_corners[i].x;
+            }
+            if (m_corners[i].y < minY)
+            {
+                minY = m_corners[i].y;
+            }
+            if (m_corners[i].y > maxY)
+            {
+                maxY = m_corners[i].y;
+            }
+        }
+        return new Rect(minX, minY, maxX - minX, maxY - minY);
+    }
+
+    public void Clip(Rect rect) 
+    {
+        Rect curRect = GetRect();
+        if((curRect.xMax > rect.xMin) && (curRect.xMin < rect.xMax) && (curRect.yMax > rect.yMin) && (curRect.yMin < rect.yMax)) 
+        {
+            float minX = curRect.xMin > rect.xMin ? curRect.xMin : rect.xMin;
+            float maxX = curRect.xMax < rect.xMax ? curRect.xMax : rect.xMax;
+            float minY = curRect.yMin > rect.yMin ? curRect.yMin : rect.yMin;
+            float maxY = curRect.yMax < rect.yMax ? curRect.yMax : rect.yMax;
+            m_corners[0] = new Vector2(minX, minY);
+            m_corners[1] = new Vector2(minX, maxY);
+            m_corners[2] = new Vector2(maxX, maxY);
+            m_corners[3] = new Vector2(maxX, minY);
+        }
+        else 
+        {
+            for(int i = 0; i < m_corners.Length; ++i) 
+            {
+                m_corners[i] = Vector2.zero;
+            }
+            m_isDrawGraphic = false;
         }
     }
 }

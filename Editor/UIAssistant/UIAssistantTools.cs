@@ -6,7 +6,8 @@ public class UIAssistantTools
     private static Color[] m_colors = new Color[6] { Color.red, Color.yellow, Color.blue, Color.green, Color.black, Color.white };
     private static GUIStyle[] styles = null;
     private static List<DrawRectInfo> list = new List<DrawRectInfo>();
-
+    private static Dictionary<int, bool> maskDic = new Dictionary<int, bool>();
+    
     public static int DefaultDepth = 1000;
 
     public static void InitStyles() 
@@ -47,6 +48,8 @@ public class UIAssistantTools
                     rectInfo.MaterialInstanceID = infos[i].Value.MaterialInstanceID;
                     rectInfo.TextureID = infos[i].Value.TextureID;
                     rectInfo.Corners = infos[i].Value.Corners;
+                    rectInfo.IsInMask = infos[i].Value.IsInMask;
+                    rectInfo.IsInMask2D = infos[i].Value.IsInMask2D;
                     infos[i].Value.ConnectInfo(rectInfo);
                     if (!rectInfos.ContainsKey(rectInfo.Depth / DefaultDepth)) 
                     {
@@ -59,20 +62,25 @@ public class UIAssistantTools
             if(rectInfos.Count > 0) 
             {
                 int allBatchCount = 0;
+                int allMaskBatchCount = 0;
+                KeyValuePair<int, int> temp;
                 foreach(var keyValue in rectInfos) 
                 {
-                    allBatchCount += CalculateDepthInCanvas(keyValue.Value.Key, keyValue.Value.Value);
+                    temp = CalculateDepthInCanvas(keyValue.Value.Key, keyValue.Value.Value);
+                    allBatchCount += temp.Key;
+                    allMaskBatchCount += temp.Value;
                 }
                 node.batchCount = allBatchCount;
+                node.maskBatchCount = allMaskBatchCount;
             }
         }
     }
 
-    private static int CalculateDepthInCanvas(TreeNode node, List<DrawRectInfo> rectInfos) 
+    private static KeyValuePair<int, int> CalculateDepthInCanvas(TreeNode node, List<DrawRectInfo> rectInfos) 
     {
         if(rectInfos.Count == 0) 
         {
-            return 0;
+            return new KeyValuePair<int, int>(0, 0);
         }
         list.Clear();
         list.Add(rectInfos[0]);
@@ -112,7 +120,17 @@ public class UIAssistantTools
             }
         }
 
-        node.batchCount = rectInfos[rectInfos.Count - 1].BatchID - rectInfos[0].Depth + 1;
+        maskDic.Clear();
+        for (int i = 0; i < rectInfos.Count; ++i) 
+        {
+            if(rectInfos[i].IsInMask == 0 && !maskDic.ContainsKey(rectInfos[i].BatchID)) 
+            {
+                maskDic.Add(rectInfos[i].BatchID, true);
+            }
+        }
+
+        node.maskBatchCount = maskDic.Count;
+        node.batchCount = rectInfos[rectInfos.Count - 1].BatchID - rectInfos[0].Depth + 1 + maskDic.Count;
         node.UpdataInfo();
         DrawRectLine ui = node.AssetObject.GetComponent<DrawRectLine>();
         if (ui == null)
@@ -120,7 +138,7 @@ public class UIAssistantTools
             ui = node.AssetObject.AddComponent<DrawRectLine>();
         }
         ui.SetDrawRectInfoList(rectInfos);
-        return node.batchCount;
+        return new KeyValuePair<int, int>(node.batchCount, node.maskBatchCount);
     }
 
     private static void CalculateDepth(DrawRectInfo a) 
@@ -128,7 +146,7 @@ public class UIAssistantTools
         a.Depth = list[0].Depth;
         for(int i = 0; i < list.Count; ++i) 
         {
-            if(Intersects(a, list[i]) || Intersects(list[i], a)) 
+            if(Intersects(a.GetRect(), list[i].GetRect())) 
             {
                 int depth = list[i].Depth + 1;
                 if (list[i].CanBatch(a)) 
@@ -140,15 +158,11 @@ public class UIAssistantTools
         }
     }
 
-    private static bool Intersects(DrawRectInfo a, DrawRectInfo b) 
+    private static bool Intersects(Rect a, Rect b) 
     {
-        Rect rect = a.GetRect();
-        for(int i = 0; i < b.Corners.Length; ++i) 
+        if(a.xMax > b.xMin && b.xMax > a.xMin && a.yMax > b.yMin && b.yMax > a.yMin) 
         {
-            if (rect.Contains(b.Corners[i])) 
-            {
-                return true;
-            }
+            return true;
         }
 
         return false;

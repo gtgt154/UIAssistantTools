@@ -61,10 +61,10 @@ public class UIAssistantWindow : EditorWindow
         {
             GUILabelType(TextAnchor.UpperLeft);
             GUILayout.Space(2);
-            GUILayout.Label(m_treeRootNode == null ? "Result: " : string.Format("Result: {0}", m_treeRootNode.batchCount));
+            GUILayout.Label(m_treeRootNode == null ? "Result: " : string.Format("Result: {0}({1})", m_treeRootNode.batchCount, m_treeRootNode.maskBatchCount));
             GUILayout.Space(2);
 
-            m_ScrollPos = GUI.BeginScrollView(new Rect(10, 140, 800, position.height - 100), m_ScrollPos, new Rect(0, 0, m_treeRootNode.RecursiveSize.x, m_treeRootNode.RecursiveSize.y), true, true);
+            m_ScrollPos = GUI.BeginScrollView(new Rect(10, 140, 800, position.height - 160), m_ScrollPos, new Rect(0, 0, m_treeRootNode.RecursiveSize.x, m_treeRootNode.RecursiveSize.y), true, true);
             m_treeRootNode.OnGUI();
             GUI.EndScrollView();
         }

@@ -7,6 +7,7 @@ using System;
 public class TreeNode
 {
     public int batchCount = 0;
+    public int maskBatchCount = 0;
     private static float nodeDefaultMarginX = 20f;
     private static float nodeDefaultWidth = 100f;
     private static float nodeDefaultWidthObject = 180f;
@@ -172,13 +173,12 @@ public class TreeNode
         {
             if (nodeInfo.check > -1) 
             {
-                title = string.Format("{0} {1}   info : ( {2} / {3} / {4} )       check : {5}      BatchID : {6} )", nodeInfo.HierarychyOrder, nodeInfo.Name, nodeInfo.Depth, nodeInfo.MaterialInstanceID, nodeInfo.TextureID, nodeInfo.check, nodeInfo.BatchID);
+                title = string.Format("{0} {1}   info : ( {2} / {3} / {4} / {5} / {6})       check : {7}      BatchID : {8} )", nodeInfo.HierarychyOrder, nodeInfo.Name, nodeInfo.Depth, nodeInfo.MaterialInstanceID, nodeInfo.TextureID, nodeInfo.IsInMask, nodeInfo.IsInMask2D, nodeInfo.check, nodeInfo.BatchID);
             }
             else 
             {
-                title = string.Format("{0} {1}   info : ( {2} / {3} / {4} )       BatchID : {5}", nodeInfo.HierarychyOrder, nodeInfo.Name, nodeInfo.Depth, nodeInfo.MaterialInstanceID, nodeInfo.TextureID, nodeInfo.BatchID);
+                title = string.Format("{0} {1}   info : ( {2} / {3} / {4} / {5} / {6})       BatchID : {7}", nodeInfo.HierarychyOrder, nodeInfo.Name, nodeInfo.Depth, nodeInfo.MaterialInstanceID, nodeInfo.TextureID, nodeInfo.IsInMask, nodeInfo.IsInMask2D, nodeInfo.BatchID);
             }
-
         }
         for (int i = 0; i < children.Count; i++)
         {
@@ -201,10 +201,29 @@ public class TreeNode
                 List<KeyValuePair<TreeNode, UINodeInfo>> childList = children[i].GetNodesInfo();
                 if(childList.Count > 0) 
                 {
+                    if(nodeInfo.IsInMask == 0) 
+                    {
+                        for (int j = 0; j < childList.Count; ++j)
+                        {
+                            childList[j].Value.IsInMask = 1;
+                        }
+                    }
+                    else if (nodeInfo.IsInMask2D != -1) 
+                    {
+                        for (int j = 0; j < childList.Count; ++j)
+                        {
+                            if(childList[j].Value.IsInMask2D == -1) 
+                            {
+                                childList[j].Value.IsInMask2D = nodeInfo.IsInMask2D;
+                                childList[j].Value.Clip(nodeInfo.GetRect());
+                            }
+                        }
+                    }
                     list.AddRange(childList);
                 }
             }
         }
+        nodeInfo.IsInMask2D = -1;
         return list;
     }
 
@@ -455,11 +474,61 @@ public class TreeNode
         MaskableGraphic ui = assetObject.GetComponent<MaskableGraphic>();
         nodeInfo = new UINodeInfo(ui != null, assetObject.GetComponent<Canvas>() != null, assetObject.name);
         nodeInfo.Depth = depth;
-        if(ui != null) 
+        nodeInfo.IsInMask = assetObject.GetComponent<Mask>() != null ? 0 : -1;
+        nodeInfo.IsInMask2D = assetObject.GetComponent<RectMask2D>() != null ? nodeInfo.GetHashCode() : -1;
+        if (ui != null) 
         {
             nodeInfo.MaterialInstanceID = ui.material.GetInstanceID();
             nodeInfo.TextureID = ui.mainTexture.GetInstanceID();
         }
-        rectTransform.GetWorldCorners(nodeInfo.Corners);
+        Matrix4x4 localToWorldMatrix = assetObject.transform.localToWorldMatrix;
+        Text t = assetObject.GetComponent<Text>();
+        if(t != null) 
+        {
+            if (t.text.Equals(""))
+            {
+                for (int i = 0; i < 4; i++)
+                {
+                    nodeInfo.Corners[i] = localToWorldMatrix.MultiplyPoint(Vector2.zero);
+                }
+            }
+            else
+            {
+                Rect rect = t.GetPixelAdjustedRect();
+                float halfWidth = t.preferredWidth / 2;
+                float halfHeight = t.preferredHeight / 2;
+                Vector2 pos_1 = Vector2.zero;
+                int idx = (int)t.alignment;
+                if (idx % 3 == 0)
+                {
+                    pos_1.x = -rect.width / 2 + halfWidth;
+                }
+                else if(idx % 3 == 2) 
+                {
+                    pos_1.x = rect.width / 2 - halfWidth;
+                }
+                if(idx / 3 == 0) 
+                {
+                    pos_1.y = rect.height / 2 - halfHeight;
+                }
+                else if(idx / 3 == 2) 
+                {
+                    pos_1.y = -rect.height / 2 + halfHeight;
+                }
+                Vector2[] pos = new Vector2[4];
+                pos[0] = new Vector2(pos_1.x - halfWidth, pos_1.y - halfHeight);
+                pos[1] = new Vector2(pos_1.x - halfWidth, pos_1.y + halfHeight);
+                pos[2] = new Vector2(pos_1.x + halfWidth, pos_1.y + halfHeight);
+                pos[3] = new Vector2(pos_1.x + halfWidth, pos_1.y - halfHeight);
+                for (int i = 0; i < 4; i++)
+                {
+                    nodeInfo.Corners[i] = localToWorldMatrix.MultiplyPoint(pos[i]);
+                }
+            }
+        }
+        else 
+        {
+            rectTransform.GetWorldCorners(nodeInfo.Corners);
+        }
     }
 }
