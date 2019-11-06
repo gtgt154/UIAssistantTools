@@ -520,6 +520,37 @@ public class TreeNode
                 pos[1] = new Vector2(pos_1.x - halfWidth, pos_1.y + halfHeight);
                 pos[2] = new Vector2(pos_1.x + halfWidth, pos_1.y + halfHeight);
                 pos[3] = new Vector2(pos_1.x + halfWidth, pos_1.y - halfHeight);
+                
+                if(rectTransform.pivot.x < 0.000001) 
+                {
+                    for (int i = 0; i < 4; ++i)
+                    {
+                        pos[i] = new Vector2(pos[i].x + rect.size.x / 2, pos[i].y);
+                    }
+                }
+                else if(Mathf.Abs(rectTransform.pivot.x - 1) < 0.000001) 
+                {
+                    for (int i = 0; i < 4; ++i)
+                    {
+                        pos[i] = new Vector2(pos[i].x - rect.size.x / 2, pos[i].y);
+                    }
+                }
+
+                if (rectTransform.pivot.y < 0.000001)
+                {
+                    for (int i = 0; i < 4; ++i)
+                    {
+                        pos[i] = new Vector2(pos[i].x, pos[i].y + rect.size.y / 2);
+                    }
+                }
+                else if (Mathf.Abs(rectTransform.pivot.y - 1) < 0.000001)
+                {
+                    for (int i = 0; i < 4; ++i)
+                    {
+                        pos[i] = new Vector2(pos[i].x, pos[i].y - rect.size.y / 2);
+                    }
+                }
+
                 for (int i = 0; i < 4; i++)
                 {
                     nodeInfo.Corners[i] = localToWorldMatrix.MultiplyPoint(pos[i]);
